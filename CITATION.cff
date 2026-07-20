@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use Q-AWED in research, please cite this software."
+title: "Q-AWED Elevator Dispatch"
+type: software
+authors:
+  - family-names: "TIANYUN-LIU-Potatoes"
+    alias: "TIANYUN-LIU-Potatoes"
+version: 1.0.0
+date-released: 2026-07-20
+license: MIT
+repository-code: "https://github.com/TIANYUN-LIU-Potatoes/Q-AWED-Elevator-Dispatch"
+url: "https://github.com/TIANYUN-LIU-Potatoes/Q-AWED-Elevator-Dispatch"
+keywords:
+  - elevator group control
+  - Q-learning
+  - adaptive weighted dispatch
+  - multi-objective optimization

@@ -1,0 +1,16 @@
+{
+  "name": "qawed-elevator-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive Q-AWED elevator scheduling research model.",
+  "author": "TIANYUN-LIU-Potatoes",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TIANYUN-LIU-Potatoes/Q-AWED-Elevator-Dispatch.git"
+  },
+  "scripts": {
+    "dev": "node dev-server.js",
+    "test": "python3 test_qawed_interactive_html.py && node --test test_simulation.js test_parameter_charts.js"
+  }
+}

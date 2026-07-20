@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Q-AWED 自适应权重电梯调度研究演示与交互仿真">
+  <title>Q-AWED｜自适应权重电梯调度研究</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="talkProgress" class="talk-progress" aria-hidden="true"></div>
+  <div class="talk-shell">
+    <aside class="talk-directory" aria-label="演讲目录">
+      <div class="brand-block">
+        <div class="brand-mark">Q</div>
+        <div><strong>Q-AWED</strong><span>Elevator Dispatch</span></div>
+      </div>
+      <nav>
+        <a href="#research" aria-current="true"><span>01</span>研究问题</a>
+        <a href="#method"><span>02</span>算法与参数</a>
+        <a href="#evidence"><span>03</span>结果与评分</a>
+        <a href="#live-lab"><span>04</span>现场实验</a>
+        <a href="#conclusion"><span>05</span>研究结论</a>
+      </nav>
+      <div class="directory-foot">
+        <span class="status-dot"></span>
+        <span id="directoryStatus">正在准备默认实验</span>
+      </div>
+    </aside>
+
+    <main>
+      <section id="research" class="talk-section research-section" data-section="01">
+        <div id="introView">
+          <header class="hero">
+            <div class="hero-copy">
+              <p class="eyebrow">Independent Research · Elevator Group Control</p>
+              <h1>Q-AWED</h1>
+              <p class="hero-lead">让电梯调度的优化偏好，随交通状态一起改变。</p>
+              <p class="hero-detail">Q-learning Adaptive Weighted Elevator Dispatch 不替代底层派梯规则，而是在代价函数之外增加一个自适应学习层，动态选择等待、能耗、停站和负载之间的权重。</p>
+            </div>
+            <div class="hero-building" aria-hidden="true">
+              <div class="hero-shaft"><i style="--level:72%"></i></div>
+              <div class="hero-shaft"><i style="--level:38%"></i></div>
+              <div class="hero-shaft"><i style="--level:88%"></i></div>
+              <div class="hero-flow"><span>早高峰</span><b>↑ ↑ ↑</b><span>混合流</span><b>↕ ↕</b></div>
+            </div>
+          </header>
+
+          <div class="section-heading">
+            <p class="eyebrow">THE PROBLEM</p>
+            <h2>同一批乘客，不同规则会做出不同决定</h2>
+            <p>选择一种方法，观察它如何处理完全相同的请求序列。动画用于解释规则，不作为实验结果。</p>
+          </div>
+
+          <div class="algorithm-demo">
+            <div class="demo-toolbar">
+              <div id="demoMode" class="segmented" role="tablist" aria-label="动画模式">
+                <button type="button" class="active" data-demo-mode="feature">特征演示</button>
+                <button type="button" data-demo-mode="comparison">同步对比</button>
+              </div>
+              <div class="icon-actions">
+                <button id="replayAlgorithm" class="icon-button" type="button" title="重新播放" aria-label="重新播放">↻</button>
+                <button id="pauseAlgorithm" class="icon-button" type="button" title="暂停或继续" aria-label="暂停或继续">Ⅱ</button>
+                <button id="stepAlgorithm" class="icon-button" type="button" title="向前单步" aria-label="向前单步">›</button>
+              </div>
+            </div>
+            <div class="demo-selector-row">
+              <div><span>主算法</span><div id="algorithmSelector" class="segmented" role="tablist" aria-label="调度算法"></div></div>
+              <label id="comparisonSelectorWrap" class="comparison-selector" for="comparisonAlgorithm">对比算法<select id="comparisonAlgorithm"></select></label>
+            </div>
+            <div class="demo-grid">
+              <div id="algorithmStage" class="algorithm-stage" aria-label="算法运行轨迹动画">
+                <div id="featureStage" class="demo-stage-view">
+                  <div class="stage-header"><span>12F</span><strong id="stageClock">0.0 / 16 秒</strong><span>1F</span></div>
+                  <div id="floorGrid" class="floor-grid"></div>
+                  <div id="elevatorShafts" class="elevator-shafts"></div>
+                  <div id="passengerLayer" class="passenger-layer"></div>
+                  <div id="assignmentLayer" class="assignment-layer"></div>
+                </div>
+                <div id="comparisonStage" class="comparison-stage" hidden>
+                  <div class="comparison-building"><strong id="comparisonLeftName">FCFS</strong><div id="comparisonLeftStage" class="mini-demo-stage"></div><div id="comparisonLeftMetrics" class="mini-metrics"></div></div>
+                  <div class="comparison-building"><strong id="comparisonRightName">Nearest Car</strong><div id="comparisonRightStage" class="mini-demo-stage"></div><div id="comparisonRightMetrics" class="mini-metrics"></div></div>
+                </div>
+              </div>
+              <article id="algorithmNarrative" class="narrative-panel" aria-live="polite"></article>
+            </div>
+            <div class="demo-timeline-row">
+              <span>0 秒</span><input id="algorithmTimeline" type="range" min="0" max="16" step="0.1" value="0" aria-label="算法动画时间轴"><output id="algorithmTimeOutput">0.0 秒</output>
+            </div>
+          </div>
+
+          <div class="research-gap">
+            <span class="gap-index">研究缺口</span>
+            <p>固定规则擅长特定交通模式，却很难同时兼顾平均等待、极端长等待、能耗和负载均衡。</p>
+            <strong>Q-AWED 的问题意识：能否让优化目标本身随场景变化？</strong>
+          </div>
+
+          <details class="detail-drawer">
+            <summary>展开六类方法完整对照表</summary>
+            <div class="table-wrap">
+              <table id="algorithmTable">
+                <thead><tr><th>方法</th><th>核心规则</th><th>优点</th><th>缺点</th><th>适合场景</th><th>实现难度</th></tr></thead>
+                <tbody id="algorithmTableBody"></tbody>
+              </table>
+            </div>
+          </details>
+
+          <details class="detail-drawer literature-drawer">
+            <summary>查看算法文献依据与复刻边界</summary>
+            <p class="method-note">这些文献用于确定算法规则或建模结构；网站不是直接照搬文献数值，而是在统一仿真环境中重新比较。</p>
+            <div id="literatureGuide" class="source-grid"></div>
+          </details>
+        </div>
+      </section>
+
+      <section id="method" class="talk-section method-section" data-section="02">
+        <div class="section-heading">
+          <p class="eyebrow">THE METHOD</p>
+          <h2>Q-AWED 如何学习“现在应该重视什么”</h2>
+          <p>交通状态决定权重策略，权重策略决定派梯代价，奖励再反过来更新选择偏好。</p>
+        </div>
+
+        <div id="qawedDecisionFlow" class="decision-flow" aria-label="Q-AWED 决策流程">
+          <div><span>01</span><strong>识别状态</strong><small>时段 · 密度 · 方向 · 繁忙度</small></div>
+          <i>→</i>
+          <div><span>02</span><strong>选择权重</strong><small>Q(s,a) 决定策略组合</small></div>
+          <i>→</i>
+          <div><span>03</span><strong>加权派梯</strong><small>最小化多目标代价</small></div>
+          <i>→</i>
+          <div><span>04</span><strong>奖励更新</strong><small>等待、能耗、停站、负载</small></div>
+        </div>
+
+        <div class="state-policy-band">
+          <div>
+            <h3>状态不是楼层</h3>
+            <p>一个状态是 Q-AWED 看到的一类交通局面，由交通模式、请求密度、方向模式和电梯繁忙程度共同组成。</p>
+            <div id="policyStateExplanation" class="state-grid"></div>
+          </div>
+          <div>
+            <h3>可选择的权重策略</h3>
+            <div id="policyPlanGuide" class="policy-chips"></div>
+          </div>
+        </div>
+
+        <div class="parameter-workbench">
+          <div class="parameter-index">
+            <div class="workbench-title"><span>13 个参数</span><small>点击查看数学依据</small></div>
+            <div id="parameterList" class="parameter-list"></div>
+          </div>
+          <article class="parameter-explainer">
+            <div class="parameter-head">
+              <div><p id="parameterSymbol" class="symbol-chip">α</p><h3 id="parameterTitle">学习率</h3></div>
+              <label class="inline-value" for="parameterPreviewValue">当前值 <input id="parameterPreviewValue" type="number" step="0.01"></label>
+            </div>
+            <p id="parameterMeaning" class="parameter-meaning"></p>
+            <div class="dual-formula-grid">
+              <div><span>学术公式</span><button id="parameterFormula" class="formula-block formula-entry" type="button"></button></div>
+              <div><span>通俗公式</span><div id="parameterPlainFormula" class="formula-block plain-formula"></div></div>
+            </div>
+            <div id="parameterSubstitution" class="substitution-line"></div>
+            <div class="variable-dictionary">
+              <h4>公式变量逐一解释</h4>
+              <div class="table-wrap"><table><thead><tr><th>符号</th><th>通俗名称</th><th>单位/范围</th><th>程序来源</th></tr></thead><tbody id="parameterVariableTable"></tbody></table></div>
+            </div>
+            <canvas id="parameterCurve" width="920" height="360" aria-label="参数函数曲线"></canvas>
+            <section id="specialParameterCharts" class="special-parameter-charts" hidden>
+              <div id="specialChartFormula" class="special-chart-formula"></div>
+              <article id="coverageChartPanel" class="coverage-chart-panel" hidden>
+                <canvas id="coverageChart" width="920" height="420" aria-label="训练轮数与状态动作覆盖率"></canvas>
+                <p id="coverageChartExplanation" class="chart-axis-note"></p>
+              </article>
+              <div id="boundaryChartPair" class="boundary-chart-pair" hidden>
+                <article class="boundary-chart-card lower-boundary-card">
+                  <h4>为什么不能更低</h4>
+                  <canvas id="lowerBoundaryChart" width="560" height="400" aria-label="参数下限比较曲线"></canvas>
+                  <p id="lowerBoundaryExplanation"></p>
+                </article>
+                <article class="boundary-chart-card upper-boundary-card">
+                  <h4>为什么不能更高</h4>
+                  <canvas id="upperBoundaryChart" width="560" height="400" aria-label="参数上限比较曲线"></canvas>
+                  <p id="upperBoundaryExplanation"></p>
+                </article>
+              </div>
+              <div id="boundaryChartSummary" class="boundary-chart-summary"></div>
+              <p class="boundary-evidence-note">推荐范围是用于平衡适应速度、稳定性与多目标权衡的启发式安全区间，最终仍需通过多随机种子敏感性实验验证。</p>
+            </section>
+            <div id="parameterLiveFacts" class="live-facts"></div>
+            <div id="parameterStateVisuals" class="parameter-state-visuals"></div>
+            <div class="math-explanation-grid">
+              <div><span>推荐范围</span><p id="parameterRecommendation"></p></div>
+              <div><span>为什么使用这个函数</span><p id="parameterReason"></p></div>
+              <div><span>函数性质</span><p id="parameterProperty"></p></div>
+              <div class="low"><span>过低</span><p id="parameterLow"></p></div>
+              <div class="high"><span>过高</span><p id="parameterHigh"></p></div>
+              <div class="assumption"><span>适用前提</span><p id="parameterAssumption"></p></div>
+            </div>
+          </article>
+        </div>
+
+        <details class="detail-drawer">
+          <summary>展开 13 个参数的完整数学说明表</summary>
+          <div class="table-wrap">
+            <table id="parameterTable">
+              <thead><tr><th>参数</th><th>公式</th><th>推荐范围</th><th>数学依据</th><th>过低</th><th>过高</th><th>适用前提</th></tr></thead>
+              <tbody id="parameterTableBody"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section id="evidence" class="talk-section evidence-section" data-section="03">
+        <div id="scenarioView">
+          <div class="section-heading evidence-heading">
+            <div><p class="eyebrow">THE EVIDENCE</p><h2 id="scenarioTitle">跨场景结果与综合评分</h2><p>所有算法使用相同请求序列和成对随机种子；结果报告均值、标准差与 95% 置信区间。</p></div>
+            <div id="scenarioTabs" class="scenario-tabs" aria-label="场景选择"></div>
+          </div>
+
+          <div class="metrics-grid">
+            <div><span>Q-AWED 平均等待</span><strong id="summaryWait">-</strong><small id="summaryWaitDelta">等待计算</small></div>
+            <div><span>95% 置信区间</span><strong id="summaryCI">-</strong><small>均值 ± CI</small></div>
+            <div><span>综合评分</span><strong id="summaryComposite">-</strong><small>跨场景通用性</small></div>
+            <div><span>平均排名</span><strong id="summaryAverageRank">-</strong><small id="summaryWorstRank">最差排名 -</small></div>
+          </div>
+
+          <div class="chart-band primary-chart">
+            <div class="chart-title"><div><h3>平均等待时间与不确定性</h3><p>横线表示 95% 置信区间，数值越低越好。</p></div><span class="legend"><i></i>Q-AWED</span></div>
+            <canvas id="waitComparisonChart" width="1100" height="540"></canvas>
+            <p id="waitChartSummary" class="chart-summary"></p>
+          </div>
+
+          <div class="charts-grid">
+            <div class="chart-band"><h3>当前场景综合评分排名</h3><canvas id="scoreRankChart" width="900" height="460"></canvas></div>
+            <div class="chart-band"><h3>评分贡献如何组成</h3><canvas id="scoreContributionChart" width="900" height="460"></canvas></div>
+          </div>
+
+          <div class="rank-panel">
+            <div><h3>跨场景排名热力图</h3><p>颜色越深，场景综合排名越靠前。</p></div>
+            <canvas id="scenarioHeatmap" width="1100" height="500"></canvas>
+            <div id="rankMatrix" class="table-wrap"></div>
+          </div>
+
+          <div id="overallFormulaSummary" class="score-formula-panel">
+            <button class="formula-step formula-entry" type="button" data-formula-id="wait-normalization"><span>1</span><div><strong>归一化</strong><p>WaitScore = 100 × min(wait) / wait</p><small>点击查看完整推导</small></div></button>
+            <button class="formula-step formula-entry" type="button" data-formula-id="scene-score"><span>2</span><div><strong>场景评分</strong><p>SceneScore(a,s)=100 × [0.50·WaitScore + 0.15·LongWaitScore + 0.13·EnergyScore + 0.10·LoadScore + 0.08·WaitRankScore + 0.04·TrafficAdaptScore]</p><small>点击查看完整推导</small></div></button>
+            <button class="formula-step formula-entry" type="button" data-formula-id="composite-score"><span>3</span><div><strong>跨场景综合</strong><p>Composite(a)=0.62·AvgSceneScore(a)+0.20·Stability(a)+0.18·Adaptability(a)</p><small>点击查看完整推导</small></div></button>
+            <p id="qawedFirstReason" class="formula-conclusion">等待运行后解释 Q-AWED 的实际排名。</p>
+          </div>
+          <div id="scoreFormula" class="sr-only">综合评分公式与变量说明</div>
+
+          <details class="detail-drawer">
+            <summary>展开当前场景完整结果表（含标准差与 95% 置信区间）</summary>
+            <div class="table-wrap"><table><thead><tr><th>算法</th><th>平均等待</th><th>标准差</th><th>95% 置信区间</th><th>长等待比例</th><th>停站</th><th>能耗</th><th>负载不均衡</th><th>等待排名</th><th>综合排名</th><th>场景评分</th></tr></thead><tbody id="scenarioResultsBody"></tbody></table></div>
+          </details>
+
+          <details class="detail-drawer">
+            <summary>展开全部场景等待时间与通用性总表</summary>
+            <div class="table-wrap"><table><thead id="scenarioOverviewHead"></thead><tbody id="resultsBody"></tbody></table></div>
+          </details>
+        </div>
+      </section>
+
+      <section id="live-lab" class="talk-section live-section" data-section="04">
+        <div class="section-heading">
+          <p class="eyebrow">LIVE EXPERIMENT</p>
+          <h2>默认结果用于演讲，需要时再现场重算</h2>
+          <p>参数变化会立即更新数学解释；只有点击重算按钮时才运行完整仿真。</p>
+        </div>
+
+        <details id="liveLabDetails" class="live-lab-details">
+          <summary><span>打开现场实验参数</span><small>13 个参数 · 6 个场景 · 可复现随机种子</small></summary>
+          <div id="scenarioParameterPanel" class="lab-body">
+            <div class="lab-header">
+              <div><h3>当前场景参数</h3><p id="scenarioPresetSummary">选择场景后显示推荐值与策略。</p></div>
+              <div class="command-row">
+                <button id="resetDefaults" type="button">重置</button>
+                <button id="applyScenarioPreset" type="button">应用场景值</button>
+                <button id="rerunScenario" type="button" class="primary-button">重算当前场景</button>
+              </div>
+            </div>
+
+            <div class="control-sections">
+              <fieldset><legend>建筑与实验规模</legend><div class="control-grid">
+                <label>楼层数<input id="floors" type="number" min="5" max="40" value="12"></label>
+                <label>电梯数<input id="elevators" type="number" min="2" max="10" value="3"></label>
+                <label>仿真步数<input id="steps" type="number" min="45" max="300" value="120"></label>
+                <label>训练轮数<input id="trainEpisodes" type="number" min="10" max="800" value="180"></label>
+                <label>评估轮数<input id="evalEpisodes" type="number" min="30" max="100" value="32"></label>
+                <label>随机种子<input id="seed" type="number" min="1" max="999999" value="2026"></label>
+                <label>长等待阈值<input id="longWaitThreshold" type="number" min="4" max="80" value="15"></label>
+              </div></fieldset>
+              <fieldset><legend>学习与奖励</legend><div class="slider-grid">
+                <label>学习率 α <output data-for="learningRate">0.18</output><input id="learningRate" type="range" min="0.02" max="0.50" step="0.01" value="0.18"></label>
+                <label>折扣因子 γ <output data-for="discount">0.88</output><input id="discount" type="range" min="0.40" max="0.99" step="0.01" value="0.88"></label>
+                <label>初始探索率 ε <output data-for="epsilonStart">0.35</output><input id="epsilonStart" type="range" min="0" max="0.80" step="0.01" value="0.35"></label>
+                <label>等待惩罚 <output data-for="waitPenalty">1.35</output><input id="waitPenalty" type="range" min="0.40" max="2.50" step="0.05" value="1.35"></label>
+                <label>能耗惩罚 <output data-for="energyPenalty">0.45</output><input id="energyPenalty" type="range" min="0.05" max="1.50" step="0.05" value="0.45"></label>
+                <label>长等待惩罚 <output data-for="longWaitPenalty">5.00</output><input id="longWaitPenalty" type="range" min="1" max="10" step="0.25" value="5.00"></label>
+              </div></fieldset>
+            </div>
+            <div id="scenarioParameterAdvice" class="advice-grid"></div>
+            <div class="lab-footer">
+              <p id="runStatus" aria-live="polite">正在准备默认实验。</p>
+              <div class="command-row"><button id="downloadCsv" type="button">导出 CSV</button><button id="runSimulation" type="button" class="primary-button">运行全部场景</button></div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="conclusion" class="talk-section conclusion-section" data-section="05">
+        <div class="conclusion-grid">
+          <div>
+            <p class="eyebrow">CONCLUSION</p>
+            <h2>优化的重点，不只是一条更聪明的固定规则</h2>
+            <div id="paperConclusion" class="paper-conclusion">正在根据默认实验生成结论。</div>
+            <p class="closing-line">Q-AWED 的价值在于：当建筑使用模式改变时，调度系统也能改变自己对“好结果”的定义。</p>
+          </div>
+          <div class="conclusion-side">
+            <h3>学到的权重策略分布</h3>
+            <div id="policyDistribution" class="policy-distribution"></div>
+            <p>比例来自当前训练后 Q 表中各状态的最优动作，不是人工预先填写的百分比。</p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="authorship-footer">
+        <p>Q-AWED original research model and implementation by <a href="https://github.com/TIANYUN-LIU-Potatoes" target="_blank" rel="noreferrer">TIANYUN-LIU-Potatoes</a>.</p>
+        <p>Copyright &copy; 2026 · <a href="https://github.com/TIANYUN-LIU-Potatoes/Q-AWED-Elevator-Dispatch/blob/main/LICENSE" target="_blank" rel="noreferrer">MIT License</a></p>
+      </footer>
+
+      <div class="compat-layer" hidden aria-hidden="true">
+        <button id="showIntroView" type="button"></button><button id="showScenarioView" type="button"></button>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="formulaExplainer" class="formula-explainer-dialog" aria-labelledby="formulaExplainerTitle">
+    <div class="formula-explainer-shell">
+      <header class="formula-explainer-header">
+        <div>
+          <p id="formulaExplainerMeta" class="formula-explainer-meta"></p>
+          <h2 id="formulaExplainerTitle">公式完整讲解</h2>
+        </div>
+        <button id="closeFormulaExplainer" class="formula-close" type="button" aria-label="关闭公式讲解" title="关闭">×</button>
+      </header>
+      <div id="formulaExplainerBody" class="formula-explainer-body"></div>
+    </div>
+  </dialog>
+
+  <script src="simulation.js"></script>
+  <script src="formula-explanations.js"></script>
+  <script src="parameter-charts.js"></script>
+  <script src="presentation.js"></script>
+</body>
+</html>
